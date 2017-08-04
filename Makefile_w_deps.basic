@@ -3,7 +3,7 @@
 #                         (C) Marco Vedovati, 2016                              #
 #################################################################################
 
-PROJECT_NAME = $(shell basename ${PWD})
+PROJECT_NAME := $(shell basename ${PWD})
 
 DEBUG_LEVEL  := Debug
 
