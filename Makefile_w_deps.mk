@@ -5,12 +5,56 @@
 
 # For help and usage, run "make help"
 
-PROJECT_NAME := $(shell basename ${PWD})
+define BASIC_MAKEFILE_TXT
 
-DEBUG_LEVEL  := Debug
+    Makefile with dependencies
+
+TL;DR: For a typical usage, clone the git repo containing this Makefile into
+your main project directory. Then, create a local Makefile using the following
+as with the following as a base file and editing as needed:
+
+##### --- Cut from here --- ####
+PROJECT_NAME := my_cool_project_name
 
 # Specify a cross-compiler prefix if needed
-CROSS_PREFIX :=
+CROSS_PREFIX := archfoo-libbar-
+
+# Build all files inside the following directories list:
+VPATH := dir1 dir2 dir3
+
+C_SRC_FILESLIST := folder1/single_file_to_build.c folder2/another_single_file_to_build.c
+
+# List of paths of extra directories to include
+INCLUDE_PATHS_LIST := /path1/foo/bar /path2/tom/boy
+
+# Extra CFLAGS to use when compiling
+USER_CFLAGS := -DENABLE_SECRET_FX
+
+# Extra LFLAGS to use when linking
+USER_LFLAGS := -T linkerfile.ld
+
+-include Makefiles/Makefile_w_deps.mk
+##### --- Cut till here --- ####
+
+~~~~~~~
+
+Some more information:
+
+- VPATH: this is the list of directories containing source code files. NOTE: All files inside these directories will be built!
+To specify single files, use the variable C_SRC_FILESLIST.
+These directories are used as well as 'include' directories for your compiler.
+
+- C_SRC_FILESLIST: this is a list of single files that should be built.
+NOTE: If you want to build all files in a directory, use 'VPATH' instead.
+
+endef
+
+PROJECT_NAME ?= $(shell basename ${PWD})
+
+DEBUG_LEVEL  ?= Debug
+
+# Specify a cross-compiler prefix if needed
+CROSS_PREFIX ?=
 
 ################################################################################
 
@@ -30,6 +74,12 @@ ifndef VPATH
 endif
 
 CC := $(CROSS_PREFIX)gcc
+
+ifeq (, $(shell which $(CC)))
+  $(error Compiler '$(CC)' not found in PATH)
+endif
+
+
 CFLAGS_WARN   = -Wall -Werror -Wextra -Wundef
 CFLAGS        = $(CFLAGS_WARN) -c -g -ggdb
 AT            = @
@@ -46,15 +96,18 @@ else
     STRIP_OPTS = -s -o
 endif
 
+CFLAGS += $(USER_CFLAGS)
+LFLAGS += $(USER_LFLAGS)
+
 # Including the same paths used for source lookup. Add more as needed...
-INCDIRS =  \
+INCLUDE_PATHS_LIST +=  \
   $(VPATH)
 
 #################################################################################
 #
 
 # Auto-generating CC -I list
-CFLAGS  += $(foreach dir,$(INCDIRS),-I$(dir) )
+CFLAGS  += $(foreach dir,$(INCLUDE_PATHS_LIST),-I$(dir) )
 
 # Define the C source files by searching in each VPATH element.
 C_SRCS  := $(foreach dir,$(VPATH),$(wildcard $(dir)/*.c))
@@ -70,6 +123,8 @@ OBJS := $(addprefix $(BUILD_OBJ_DIR)/,$(notdir $(C_SRCS:.c=.o)))
 
 DEPS := $(OBJS:.o=.d)
 -include $(DEPS)
+
+
 
 #################################################################################
 #
@@ -122,29 +177,5 @@ clean:
 .PHONY: help
 help:
 	$(AT) \
-	echo "\n   Makefile with dependencies \n \
-	\n \
-	TL;DR: For a typical usage, clone the git repo containing this Makefile into your main project directory. \n \
-	Then, create a local Makefile with the following content: \n \
-	\n \
-	##### --- Cut from here --- #### \n \
-	PROJECT_NAME := my_cool_project_name  \n \
-	\n \
-	# Build all files inside the following directories list: \n \
-	VPATH := dir1 dir2 dir3  \n \
-	\n \
-	C_SRC_FILESLIST := folder1/single_file_to_build.c folder2/another_single_file_to_build.c \n \
-	\n \
-	-include Makefiles/Makefile_w_deps.mk \n \
-	##### --- Cut till here --- #### \n \
-	\n \
-	~~~~~~~\n \
-	This is the list of make variables you should define or could override: \n \
-	\n \
-	- VPATH: this is the list of directories containing source code files. NOTE: All files inside these directories will be built! \n \
-	  To specify single files, use the variable C_SRC_FILESLIST. \n \
-	  These directories are used as well as 'include' directories for your compiler. \n \
-	\n \
-	- C_SRC_FILESLIST: this is a list of single files that should be built. \n \
-	  NOTE: If you want to build all files in a directory, use 'VPATH' instead." \
+	echo $(info $(BASIC_MAKEFILE_TXT)) ;      \
 
